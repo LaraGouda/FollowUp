@@ -8,6 +8,10 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
+const ANALYSIS_DISABLED = true;
+const PROJECT_HIATUS_MESSAGE =
+  "This project is currently on a brief hiatus due to expired hackathon access to the NeuralSeek API. We're exploring replacement options and will be back soon.";
+
 interface AnalysisResult {
   summary: string;
   nextTasks: Array<{
@@ -714,6 +718,16 @@ const normalizeEmail = (input: any): { subject: string; body: string } => {
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  if (ANALYSIS_DISABLED) {
+    return new Response(
+      JSON.stringify({
+        error: 'Analysis is on hiatus',
+        message: PROJECT_HIATUS_MESSAGE,
+      }),
+      { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   try {
