@@ -10,6 +10,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Separator } from "@/components/ui/separator";
+import { ProjectHiatusDialog } from "@/components/ProjectHiatusDialog";
+import { AUTH_DISABLED, shouldShowProjectHiatusNotice } from "@/lib/projectStatus";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,9 +19,11 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isHiatusDialogOpen, setIsHiatusDialogOpen] = useState(false);
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isAuthBusy = isLoading || (!AUTH_DISABLED && loading);
 
   // Redirect to home if already signed in
   // Supabase's built-in OAuth handles the callback automatically
@@ -33,7 +37,20 @@ export default function Auth() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
+  const handleHiatusAuthAttempt = () => {
+    setError("");
+    setIsLoading(false);
+    if (shouldShowProjectHiatusNotice()) {
+      setIsHiatusDialogOpen(true);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
+    if (AUTH_DISABLED) {
+      handleHiatusAuthAttempt();
+      return;
+    }
+
     setIsLoading(true);
     setError("");
     
@@ -95,6 +112,11 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (AUTH_DISABLED) {
+      handleHiatusAuthAttempt();
+      return;
+    }
     
     // Validation
     if (!email.trim() || !password.trim()) {
@@ -175,7 +197,7 @@ export default function Auth() {
               type="button"
               onClick={handleGoogleSignIn}
               className="w-full bg-white text-gray-900 border border-gray-300 hover:bg-gray-50"
-                  disabled={isLoading || loading}
+                  disabled={isAuthBusy}
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path
@@ -195,7 +217,7 @@ export default function Auth() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-                  {isLoading || loading ? "Connecting to Google..." : "Continue with Google"}
+                  {isAuthBusy ? "Connecting to Google..." : "Continue with Google"}
             </Button>
 
             <div className="relative">
@@ -205,7 +227,7 @@ export default function Auth() {
               </span>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate={AUTH_DISABLED}>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -214,7 +236,7 @@ export default function Auth() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading || loading}
+                  disabled={isAuthBusy}
                 required
               />
             </div>
@@ -226,7 +248,7 @@ export default function Auth() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading || loading}
+                  disabled={isAuthBusy}
                 required
                 minLength={6}
               />
@@ -240,11 +262,12 @@ export default function Auth() {
             )}
 
             <Button
-              type="submit"
+              type={AUTH_DISABLED ? "button" : "submit"}
+              onClick={AUTH_DISABLED ? handleHiatusAuthAttempt : undefined}
               className="w-full bg-gradient-primary"
-                  disabled={isLoading || loading}
+                  disabled={isAuthBusy}
             >
-                  {isLoading || loading ? (
+                  {isAuthBusy ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                   {isLogin ? "Signing in..." : "Creating account..."}
@@ -262,7 +285,7 @@ export default function Auth() {
                   setError("");
                 }}
                 className="text-primary hover:underline"
-                  disabled={isLoading || loading}
+                  disabled={isAuthBusy}
               >
                 {isLogin
                   ? "Don't have an account? Sign up"
@@ -273,6 +296,7 @@ export default function Auth() {
           </div>
         </CardContent>
       </Card>
+      <ProjectHiatusDialog open={isHiatusDialogOpen} onOpenChange={setIsHiatusDialogOpen} />
     </div>
   );
 }

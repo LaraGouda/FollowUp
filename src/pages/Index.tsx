@@ -4,15 +4,6 @@ import { TranscriptInput } from "@/components/TranscriptInput";
 import { ResultsDisplay } from "@/components/ResultsDisplay";
 import { Dashboard } from "@/components/Dashboard";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -20,13 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { parseAnalysisResults, type AnalysisResults } from "@/lib/parseAnalysisResults";
 import { buildResultsFromMeeting, type MeetingWithRelations } from "@/lib/buildResultsFromMeeting";
-import {
-  ANALYSIS_DISABLED,
-  PROJECT_HIATUS_MESSAGE,
-  shouldShowAnalysisHiatusNotice,
-} from "@/lib/projectStatus";
+import { ANALYSIS_DISABLED, shouldShowProjectHiatusNotice } from "@/lib/projectStatus";
 import { AppHeader } from "@/components/AppHeader";
 import { NavLink } from "@/components/NavLink";
+import { ProjectHiatusDialog } from "@/components/ProjectHiatusDialog";
 
 type IndexProps = {
   initialView?: "dashboard";
@@ -75,7 +63,7 @@ const Index = ({ initialView }: IndexProps) => {
 
   const handleAnalyze = async (transcript: string) => {
     if (ANALYSIS_DISABLED) {
-      if (shouldShowAnalysisHiatusNotice()) {
+      if (shouldShowProjectHiatusNotice()) {
         setIsHiatusDialogOpen(true);
       }
       return;
@@ -432,19 +420,7 @@ const Index = ({ initialView }: IndexProps) => {
         </div>
       </footer>
 
-      <AlertDialog open={isHiatusDialogOpen} onOpenChange={setIsHiatusDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Analysis is on hiatus</AlertDialogTitle>
-            <AlertDialogDescription>
-              {PROJECT_HIATUS_MESSAGE}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction>OK</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ProjectHiatusDialog open={isHiatusDialogOpen} onOpenChange={setIsHiatusDialogOpen} />
     </div>
   );
 };
